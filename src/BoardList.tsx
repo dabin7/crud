@@ -1,6 +1,13 @@
 import { Component } from 'react';
 import Table from 'react-bootstrap/Table';
 import Button from 'react-bootstrap/Button';
+import Axios from 'axios';
+
+const submitTest = () => {
+  Axios.get('http://localhost:8000/', {}).then(() => {
+    alert('등록 완료!');
+  });
+};
 
 class BoardList extends Component {
   render() {
@@ -46,7 +53,9 @@ class BoardList extends Component {
             </tr>
           </tbody>
         </Table>
-        <Button variant='info'>글쓰기</Button>
+        <Button variant='info' onClick={submitTest}>
+          글쓰기
+        </Button>
         <Button variant='secondary'>수정하기</Button>
         <Button variant='danger'>삭제하기</Button>
       </div>
