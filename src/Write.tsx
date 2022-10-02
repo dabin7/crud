@@ -3,11 +3,26 @@ import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import Axios from 'axios';
 
-class Write extends Component {
+interface Props {
+  isModifyMode: boolean;
+  boardId: number;
+  handleCancel: any;
+}
+
+class Write extends Component<Props> {
+  constructor(props: any) {
+    super(props);
+    this.state = {
+      title: '',
+      content: '',
+      isRendered: false,
+    };
+  }
+
   state: any = {
-    isModifyMode: false,
     title: '',
     content: '',
+    isRendered: false,
   };
 
   write = () => {
@@ -16,7 +31,11 @@ class Write extends Component {
       content: this.state.content,
     })
       .then((res) => {
-        console.log(res);
+        this.setState({
+          title: '',
+          content: '',
+        });
+        this.props.handleCancel();
       })
       .catch((e) => {
         console.error(e);
@@ -27,9 +46,30 @@ class Write extends Component {
     Axios.post('http://localhost:8000/update', {
       title: this.state.title,
       content: this.state.content,
+      id: this.props.boardId,
     })
       .then((res) => {
-        console.log(res);
+        this.setState({
+          title: '',
+          content: '',
+        });
+        this.props.handleCancel();
+      })
+      .catch((e) => {
+        console.error(e);
+      });
+  };
+
+  detail = () => {
+    Axios.get(`http://localhost:8000/detail?id=${this.props.boardId}`)
+      .then((res) => {
+        console.log(res.data);
+        if (res.data.length > 0) {
+          this.setState({
+            title: res.data[0].BOARD_TITLE,
+            content: res.data[0].BOARD_CONTENT,
+          });
+        }
       })
       .catch((e) => {
         console.error(e);
@@ -42,24 +82,32 @@ class Write extends Component {
     });
   };
 
+  componentDidUpdate = (prevProps: any) => {
+    if (this.props.isModifyMode && this.props.boardId !== prevProps.boardId) {
+      this.detail();
+    }
+  };
+
   render() {
     return (
       <div>
         <Form>
-          <Form.Group className='mb-3' controlId='exampleForm.ControlInput1'>
+          <Form.Group className='mb-3'>
             <Form.Label>제목</Form.Label>
             <Form.Control
               type='text'
-              name={this.state.value}
+              name='title'
+              value={this.state.title}
               onChange={this.handleChange}
               placeholder='제목을 입력하세요.'
             />
           </Form.Group>
-          <Form.Group className='mb-3' controlId='exampleForm.ControlTextarea1'>
+          <Form.Group className='mb-3'>
             <Form.Label>내용</Form.Label>
             <Form.Control
               as='textarea'
-              name={this.state.value}
+              name='content'
+              value={this.state.content}
               onChange={this.handleChange}
               placeholder='내용을 입력하세요.'
             />
@@ -67,11 +115,13 @@ class Write extends Component {
         </Form>
         <Button
           variant='info'
-          onClick={this.state.isModifyMode ? this.write : this.update}
+          onClick={this.props.isModifyMode ? this.update : this.write}
         >
           작성완료
         </Button>
-        <Button variant='secondary'>취소</Button>
+        <Button variant='secondary' onClick={this.props.handleCancel}>
+          취소
+        </Button>
       </div>
     );
   }

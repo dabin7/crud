@@ -8,16 +8,27 @@ const Board = ({
   title,
   registerId,
   registerDate,
+  props,
 }: {
   id: number;
   title: string;
   registerId: string;
   registerDate: string;
+  props: any;
 }) => {
   return (
     <tr>
       <td>
-        <input type='checkbox'></input>
+        <input
+          type='checkbox'
+          value={id}
+          onChange={(e) => {
+            props.onCheckboxChange(
+              e.currentTarget.checked,
+              e.currentTarget.value
+            );
+          }}
+        ></input>
       </td>
       <td>{id}</td>
       <td>{title}</td>
@@ -27,9 +38,24 @@ const Board = ({
   );
 };
 
-class BoardList extends Component {
+interface Props {
+  isComplete: boolean;
+  handleModify: any;
+  renderComplete: any;
+}
+
+class BoardList extends Component<Props> {
+  constructor(props: any) {
+    super(props);
+    this.state = {
+      boardList: [],
+      checkList: [],
+    };
+  }
+
   state = {
     boardList: [],
+    checkList: [],
   };
 
   getList = () => {
@@ -37,15 +63,57 @@ class BoardList extends Component {
       .then((res) => {
         const { data } = res;
         this.setState({ boardList: data });
+        this.props.renderComplete();
       })
       .catch((e) => {
         console.error(e);
       });
   };
 
+  onCheckboxChange = (checked: boolean, id: any) => {
+    const list: Array<string> = this.state.checkList.filter((v) => {
+      return v !== id;
+    });
+    if (checked) {
+      list.push(id);
+    }
+    this.setState({
+      checkList: list,
+    });
+  };
+
   componentDidMount() {
     this.getList();
   }
+
+  componentDidUpdate() {
+    if (!this.props.isComplete) {
+      this.getList();
+    }
+  }
+
+  handleDelete = () => {
+    if (this.state.checkList.length === 0) {
+      alert('삭제할 게시글을 선택하세요.');
+      return;
+    }
+
+    let boardIdList = '';
+
+    this.state.checkList.forEach((v: any) => {
+      boardIdList += `'${v}',`;
+    });
+
+    Axios.post('http://localhost:8000/delete', {
+      boardIdList: boardIdList.substring(0, boardIdList.length - 1),
+    })
+      .then(() => {
+        this.getList();
+      })
+      .catch((e) => {
+        console.error(e);
+      });
+  };
 
   render() {
     const { boardList }: { boardList: any } = this.state;
@@ -71,14 +139,24 @@ class BoardList extends Component {
                   registerId={v.REGISTER_ID}
                   registerDate={v.REGISTER_DATE}
                   key={v.BOARD_ID}
+                  props={this}
                 />
               );
             })}
           </tbody>
         </Table>
         <Button variant='info'>글쓰기</Button>
-        <Button variant='secondary'>수정하기</Button>
-        <Button variant='danger'>삭제하기</Button>
+        <Button
+          variant='secondary'
+          onClick={() => {
+            this.props.handleModify(this.state.checkList);
+          }}
+        >
+          수정하기
+        </Button>
+        <Button variant='danger' onClick={this.handleDelete}>
+          삭제하기
+        </Button>
       </div>
     );
   }
